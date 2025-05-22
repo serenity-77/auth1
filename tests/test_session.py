@@ -1,6 +1,7 @@
 import pytest
 import typing as t
 import json
+import copy
 
 from auth1 import (
     Session,
@@ -8,7 +9,8 @@ from auth1 import (
     SessionHandler,
     NullSessionHandler,
     SessionSerializer,
-    JSONSerializer
+    JSONSerializer,
+    SessionManager
 )
 
 from ._helpers import (
@@ -87,7 +89,23 @@ async def test_session_store_async_migrate() -> None:
     assert True == handler.destroyed
 
 
-def test_session_save() -> None:
+def test_session_store_set_id() -> None:
+    def session_store_id() -> str:
+        return "54321"
+
+    handler = NoopSessionHandler(_async=True)
+
+    session_store: Session = SessionStore("auth1", handler)
+    setattr(session_store, "generate_session_id", session_store_id)
+
+    assert session_store.id is None
+
+    session_store.id = None
+
+    assert "54321" == session_store.id
+
+
+def test_session_store_save() -> None:
     session_data: t.Dict[str, t.Any] = {
         'key1': "hello World",
         'key2': {
@@ -145,14 +163,24 @@ def test_session_start() -> None:
 
     encoded_session_data: bytes = json.dumps(session_data).encode()
 
-    handler = NoopReadSessionHandler(encoded_session_data)
+    handler: SessionHandler = NoopReadSessionHandler(encoded_session_data)
 
     session_store: SessionStore = SessionStore("auth1", handler, id="12345")
 
     session_store.start()
 
     assert session_data == session_store._attributes
+
+    assert isinstance(handler, NoopReadSessionHandler)
     assert "12345" == handler.read_id
+
+    handler = NoopSessionHandler()
+    session_store = SessionStore("auth1", handler, id="12345")
+
+    session_store.start()
+
+    assert {} == session_store._attributes
+
 
 @pytest.mark.asyncio
 async def test_session_async_start() -> None:
@@ -166,11 +194,71 @@ async def test_session_async_start() -> None:
 
     encoded_session_data: bytes = json.dumps(session_data).encode()
 
-    handler = NoopReadSessionHandler(encoded_session_data, _async=True)
+    handler: SessionHandler = NoopReadSessionHandler(encoded_session_data, _async=True)
 
     session_store: SessionStore = SessionStore("auth1", handler, id="12345")
 
     await session_store.async_start()
 
     assert session_data == session_store._attributes
+
+    assert isinstance(handler, NoopReadSessionHandler)
     assert "12345" == handler.read_id
+
+    handler = NoopSessionHandler()
+    session_store = SessionStore("auth1", handler, id="12345")
+
+    await session_store.async_start()
+
+    assert {} == session_store._attributes
+
+
+_CONFIG: t.Dict[str, t.Any] = {
+    'serializer': "noop",
+    'cookie': "auth1_session"
+}
+
+
+def test_session_manager_init() -> None:
+    session_manager = SessionManager(_CONFIG)
+    assert isinstance(session_manager, SessionManager)
+    assert _CONFIG == session_manager._config
+
+def test_session_manager_create_session() -> None:
+    config = copy.deepcopy(_CONFIG)
+    config['handlers'] = {
+        'null': {
+            'factory': lambda: NullSessionHandler()
+        }
+    }
+    config['serializers'] = {
+        'noop': {
+            'factory': lambda: NoopSerializer()
+        }
+    }
+
+    session_manager = SessionManager(config)
+
+    assert "null" in session_manager._config['handlers']
+
+    session_store: SessionStore = session_manager.create("null")
+
+    assert isinstance(session_store, SessionStore)
+    assert "auth1_session" == session_store.name
+    assert session_store.id is None
+    assert isinstance(session_store._handler, NullSessionHandler)
+    assert isinstance(session_store._serializer, NoopSerializer)
+
+    del config['serializer']
+
+    session_manager = SessionManager(config)
+    session_store = session_manager.create("null")
+
+    assert isinstance(session_store._serializer, JSONSerializer)
+
+    del config['cookie']
+
+    session_manager = SessionManager(config)
+    session_store = session_manager.create("null")
+
+    assert "PHPSESSID" == session_store.name

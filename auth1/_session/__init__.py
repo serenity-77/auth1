@@ -5,9 +5,11 @@ from ._handler import (
 from ._serializer import (
     JSONSerializer
 )
+from ._manager import SessionManager
 
 __all__ = [
     "SessionStore",
     "NullSessionHandler",
-    "JSONSerializer"
+    "JSONSerializer",
+    "SessionManager"
 ]

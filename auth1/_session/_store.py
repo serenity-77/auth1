@@ -39,7 +39,9 @@ class SessionStore:
         return self._id
 
     @id.setter
-    def id(self, id: str) -> None:
+    def id(self, id: str | None) -> None:
+        if id is None:
+            id = self.generate_session_id()
         self._id = id
 
     @property
@@ -58,7 +60,10 @@ class SessionStore:
         if inspect.isawaitable(session_data):
             raise TypeError("Cannot use awaitable return value from handler read")
 
-        self._attributes = self._serializer.decode(session_data)
+        if not session_data:
+            self._attributes = {}
+        else:
+            self._attributes = self._serializer.decode(session_data)
 
     async def async_start(self) -> None:
         assert self._id is not None
@@ -68,7 +73,10 @@ class SessionStore:
         if inspect.isawaitable(session_data):
             session_data = await session_data
 
-        self._attributes = self._serializer.decode(session_data)
+        if not session_data:
+            self._attributes = {}
+        else:
+            self._attributes = self._serializer.decode(session_data)
 
     def save(self) -> None:
         assert self._id is not None

@@ -27,7 +27,10 @@ class AuthConfig:
         drivers[name] = factory
 
     def create_driver(self, name: str) -> Guard | None:
-        pass
+        config = self._config['guards'][name]
+        guard_factory = self._config['drivers'][config['driver']]
+        guard: Guard = guard_factory(name)
+        return guard
 
     def __getitem__(self, key: str) -> t.Any:
         return self._config[key]
@@ -45,10 +48,7 @@ class AuthManager(AuthFactory):
         if name is None:
             name = self._get_default_driver()
 
-        config = self._config['guards'][name]
-        guard_factory = self._config['drivers'][config['driver']]
-
-        guard: Guard = guard_factory(name)
+        guard: Guard | None = self._config.create_driver(name)
 
         return guard
 

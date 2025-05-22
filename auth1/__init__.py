@@ -20,7 +20,8 @@ from ._random import random_string, set_random_string_factory
 from ._session import (
     SessionStore,
     NullSessionHandler,
-    JSONSerializer
+    JSONSerializer,
+    SessionManager
 )
 
 __all__ = [
@@ -41,6 +42,7 @@ __all__ = [
     "NullSessionHandler",
     "SessionSerializer",
     "JSONSerializer",
+    "SessionManager",
     "GenericUser",
     "random_string",
     "set_random_string_factory"

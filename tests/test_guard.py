@@ -1,6 +1,6 @@
 import typing as t
 import pytest
-import pytest_asyncio   # type: ignore
+import pytest_asyncio
 import hashlib
 
 from auth1 import (

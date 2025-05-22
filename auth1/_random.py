@@ -3,9 +3,9 @@ import binascii
 import typing as t
 
 try:
+    randbytes = os.urandom
+except AttributeError:
     from random import randbytes
-except ImportError:
-    randbytes = os.urandom   # type: ignore
 
 def _default_random_string(length: int = 16) -> str:
     result = binascii.hexlify(randbytes(length)).decode()
