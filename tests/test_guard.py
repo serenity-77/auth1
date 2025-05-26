@@ -68,6 +68,28 @@ class NoopUserProvider2(UserProvider):
     async def _async_validate_credentials(self, user: Authenticatable, credentials: t.Dict[str, t.Any]) -> bool:
         return True
 
+def test_session_guard_init_default() -> None:
+    guard = SessionGuard("horas", NoopUserProvider1())
+
+    assert isinstance(guard, Guard)
+    assert isinstance(guard, SessionGuard)
+
+    assert "horas" == guard._name
+
+    assert isinstance(guard._user_provider, UserProvider)
+    assert isinstance(guard._user_provider, NoopUserProvider1)
+
+    assert guard._session is None
+
+    session: SessionStore = SessionStore("auth1", NullSessionHandler())
+
+    guard.set_session(session)
+
+    assert isinstance(guard._session, Session)
+    assert isinstance(guard._session, SessionStore)
+
+    assert guard._session is session
+
 
 def test_session_guard_init() -> None:
     guard = SessionGuard(

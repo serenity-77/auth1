@@ -17,7 +17,7 @@ class SessionGuard(StatefullGuard):
     _user: Authenticatable | None = None
     _remember: bool = False
 
-    def __init__(self, name: str, user_provider: UserProvider, session: Session) -> None:
+    def __init__(self, name: str, user_provider: UserProvider, session: Session | None = None) -> None:
         self._name = name
         self._user_provider = user_provider
         self._session = session
@@ -30,6 +30,9 @@ class SessionGuard(StatefullGuard):
     @property
     def remember(self) -> bool:
         return self._remember
+
+    def set_session(self, session: Session) -> None:
+        self._session = session
 
     def user(self) -> GuardUserRetval:
         self._user = self._get_user() # type: ignore
@@ -87,14 +90,18 @@ class SessionGuard(StatefullGuard):
         return None
 
     def _update_session(self, id: str) -> None:
+        assert self._session is not None
         self._session[self.name] = id
         self._session.migrate(True)
 
     async def _async_update_session(self, id: str) -> None:
+        assert self._session is not None
         self._session[self.name] = id
         await self._session.async_migrate(True)
 
     def _get_user(self, _async: bool = False) -> AuthenticatableRetval:
+        assert self._session is not None
+
         if self._user is not None:
             return self._user
 

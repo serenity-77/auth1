@@ -59,13 +59,6 @@ class AuthFactory(abc.ABC):
         pass
 
 
-class Request(t.Protocol):
-    cookies: t.Dict[str, str]
-    query: t.Dict[str, str]
-    input: t.Dict[str, str]
-    headers: t.Dict[str, str]
-
-
 class SessionHandler(abc.ABC):
 
     @abc.abstractmethod
@@ -120,3 +113,11 @@ class Session(t.Protocol):
 
     def __setitem__(self, key: t.Any, data: t.Any) -> None:
         ...
+
+
+class Request(t.Protocol):
+    cookies: t.Dict[str, str]
+    query: t.Dict[str, str]
+    input: t.Dict[str, str]
+    headers: t.Dict[str, str]
+    session: Session

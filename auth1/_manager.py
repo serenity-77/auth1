@@ -8,49 +8,40 @@ from ._types import AuthFactory, Guard
 #
 #     'guards': {
 #         'web': {
-#             'driver': 'session'
+#             'driver': 'session',
+#             'factory': ...
 #         }
 #     }
 # }
 
-class AuthConfig:
-
-    def __init__(self, config: t.Dict[str, t.Any]) -> None:
-        self._config = config
-
-    def add_driver_factory(self, name: str, factory: t.Callable[[str], Guard]) -> None:
-        try:
-            drivers = self._config['drivers']
-        except KeyError:
-            drivers = self._config.setdefault('drivers', {})
-
-        drivers[name] = factory
-
-    def create_driver(self, name: str) -> Guard | None:
-        config = self._config['guards'][name]
-        guard_factory = self._config['drivers'][config['driver']]
-        guard: Guard = guard_factory(name)
-        return guard
-
-    def __getitem__(self, key: str) -> t.Any:
-        return self._config[key]
-
-    def __setitem__(self, key: str, value: t.Any) -> None:
-        self._config[key] = value
-
-
 class AuthManager(AuthFactory):
 
-    def __init__(self, config: AuthConfig):
+    def __init__(self, config: t.Dict[str, t.Any]):
         self._config = config
+        self._driver_factory: t.Dict[str, t.Callable] = {} #type: ignore [type-arg]
+
+    @property
+    def config(self) -> t.Dict[str, t.Any]:
+        return self._config
 
     def guard(self, name: str | None = None) -> Guard | None:
         if name is None:
             name = self._get_default_driver()
 
-        guard: Guard | None = self._config.create_driver(name)
+        guard_config = self._config['guards'][name]
+        driver_name = guard_config['driver']
+
+        driver_factory = self._driver_factory[driver_name]
+
+        guard: Guard | None = driver_factory(name)
 
         return guard
+
+    def factory(self, name: str) -> t.Callable: # type: ignore [type-arg]
+        def decorator(f: t.Callable) -> t.Callable: # type: ignore [type-arg]
+            self._driver_factory[name] = f
+            return f
+        return decorator
 
     def _get_default_driver(self) -> str:
         try:

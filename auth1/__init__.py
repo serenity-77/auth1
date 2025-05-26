@@ -12,7 +12,7 @@ from ._types import (
     SessionSerializer
 )
 
-from ._manager import AuthManager, AuthConfig
+from ._manager import AuthManager
 from ._guards import SessionGuard
 from ._user import GenericUser
 from ._random import random_string, set_random_string_factory
@@ -34,7 +34,6 @@ __all__ = [
     "StatefullGuard",
     "AuthFactory",
     "AuthManager",
-    "AuthConfig",
     "SessionGuard",
     "Session",
     "SessionStore",

@@ -52,6 +52,10 @@ class SessionStore:
     def serializer(self) -> SessionSerializer:
         return self._serializer
 
+    @property
+    def token(self) -> str:
+        return self._attributes['_token'] # type: ignore
+
     def start(self) -> None:
         assert self._id is not None
 
@@ -65,6 +69,9 @@ class SessionStore:
         else:
             self._attributes = self._serializer.decode(session_data)
 
+        if '_token' not in self._attributes:
+            self.regenerate_token()
+
     async def async_start(self) -> None:
         assert self._id is not None
 
@@ -77,6 +84,9 @@ class SessionStore:
             self._attributes = {}
         else:
             self._attributes = self._serializer.decode(session_data)
+
+        if '_token' not in self._attributes:
+            self.regenerate_token()
 
     def save(self) -> None:
         assert self._id is not None
@@ -109,6 +119,12 @@ class SessionStore:
         return True
 
     def generate_session_id(self) -> str:
+        return random_string(40)
+
+    def regenerate_token(self) -> None:
+        self._attributes['_token'] = self._generate_token()
+
+    def _generate_token(self) -> str:
         return random_string(40)
 
     def __getitem__(self, key: t.Any) -> t.Any:
